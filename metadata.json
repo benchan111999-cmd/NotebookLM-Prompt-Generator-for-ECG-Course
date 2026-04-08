@@ -1,0 +1,5 @@
+{
+  "name": "ECG Course Prompt Architect",
+  "description": "Generate high-precision prompts for NotebookLM slide decks based on institutional templates for ECG courses.",
+  "requestFramePermissions": []
+}
