@@ -126,16 +126,23 @@ export default function App() {
     }
 
     const modInfo = courseData[selectedModule];
-    let prompt = `### ROLE\nYou are an expert Cardiology Educator and ECG Specialist. Your goal is to create a high-fidelity slide deck outline based on the provided source documents.\n\n`;
+    let prompt = `### ROLE\nYou are an expert Cardiology Educator and ECG Specialist. Your goal is to create a high-fidelity slide deck based on the provided source documents.\n\n`;
 
     if (useStyle) {
       prompt += `### STYLE GUIDELINES\nRefer strictly to the uploaded "Style Template" document. You must follow the exact formatting, layout, and structural requirements for:\n- The Front Page/Title Slide\n- Section Headers\n- Content Slides\n- Footer/Reference layout\n\n`;
     }
 
     if (mode === 'lecture') {
-      prompt += `### TASK: LECTURE SLIDES\nCreate a detailed slide deck outline for the following topics within ${selectedModule}:\n${selectedTopics.map(t => `- ${t}`).join('\n')}\n\n`;
+      prompt += `### TASK: LECTURE SLIDES\nCreate a detailed slide deck for the following topics within ${selectedModule}:\n${selectedTopics.map(t => `- ${t}`).join('\n')}\n\n`;
       prompt += `### PEDAGOGICAL STRATEGY\n${modInfo.strategy}\n\n`;
-      prompt += `### SLIDE REQUIREMENTS\nFor each slide, provide:\n1. Slide Title\n2. Core Bullet Points (concise, high-yield)\n3. Visual Suggestion: Describe exactly what ECG strip, diagram, or image should be placed on the slide to illustrate the point.\n`;
+      
+      const isRhythmModule = !selectedModule.startsWith("Module 1");
+      
+      if (isRhythmModule) {
+        prompt += `### SLIDE REQUIREMENTS\nFor each slide, provide:\n1. Slide Title\n2. Core Bullet Points (concise, high-yield)\n3. ECG Strip Requirement: Include an accurate ECG strip showing the exact ECG rhythm or arrhythmia, corresponding to the diagnosis referring to.\n4. Diagnostic Criteria: Provide detailed diagnostic criteria of that particular rhythm/arrhythmia.\n5. Recognition Summary: A featured statement to summarise, how that particular rhythm/arrhythmia can be recognised or distinguished from others.\n6. Visual Suggestion: Describe any additional diagram or image needed to illustrate the point.\n`;
+      } else {
+        prompt += `### SLIDE REQUIREMENTS\nFor each slide, provide:\n1. Slide Title\n2. Core Bullet Points (concise, high-yield)\n3. Visual Suggestion: Describe exactly what ECG strip, diagram, or image should be placed on the slide to illustrate the point.\n`;
+      }
     } else {
       prompt += `### TASK: EXERCISE GENERATION\nGenerate 10 high-quality clinical exercise questions based on the following topics:\n${selectedTopics.map(t => `- ${t}`).join('\n')}\n\n`;
       prompt += `### EXERCISE FORMAT\nFor each of the 10 questions, use this exact structure:\n1. Case Presentation: (Patient age, gender, chief complaint, vital signs)\n2. ECG Finding: (Describe the specific ECG abnormalities found)\n3. Multiple Choice Question: (A high-yield clinical question with 4 options)\n4. Correct Answer & Rationale: (Explain why the answer is correct and why others are wrong, referencing the source documents)\n`;
