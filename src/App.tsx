@@ -126,7 +126,11 @@ export default function App() {
     }
 
     const modInfo = courseData[selectedModule];
+    const moduleNumber = selectedModule.match(/Module (\d+)/)?.[1] || "";
+    
     let prompt = `### ROLE\nYou are an expert Cardiology Educator and ECG Specialist. Your goal is to create a high-fidelity slide deck based on the provided source documents.\n\n`;
+
+    prompt += `### SOURCE PRIORITIZATION\nCross-reference and synthesize information from the following sources:\n1. **Master Curriculum**: Use all uploaded PDF files as the primary clinical and theoretical authority.\n2. **Module ${moduleNumber} Outline**: Use the file named "Module ${moduleNumber} Outline" (or similar version) to drive the specific structure and flow of this deck.\n\n`;
 
     if (useStyle) {
       prompt += `### STYLE GUIDELINES\nRefer strictly to the uploaded "Style Template" document. You must follow the exact formatting, layout, and structural requirements for:\n- The Front Page/Title Slide\n- Section Headers\n- Content Slides\n- Footer/Reference layout\n\n`;
@@ -139,9 +143,9 @@ export default function App() {
       const isRhythmModule = !selectedModule.startsWith("Module 1");
       
       if (isRhythmModule) {
-        prompt += `### SLIDE REQUIREMENTS\nFor each slide, provide:\n1. Slide Title\n2. Core Bullet Points (concise, high-yield)\n3. ECG Strip Requirement: Include an accurate ECG strip showing the exact ECG rhythm or arrhythmia, corresponding to the diagnosis referring to.\n4. Diagnostic Criteria: Provide detailed diagnostic criteria of that particular rhythm/arrhythmia.\n5. Recognition Summary: A featured statement to summarise, how that particular rhythm/arrhythmia can be recognised or distinguished from others.\n6. Visual Suggestion: Describe any additional diagram or image needed to illustrate the point.\n`;
+        prompt += `### SLIDE REQUIREMENTS\nFor each slide, provide:\n1. Slide Title\n2. Core Bullet Points (concise, high-yield)\n3. ECG Strip Requirement: Include an accurate ECG strip showing the exact ECG rhythm or arrhythmia, corresponding to the diagnosis referring to.\n4. Diagnostic Criteria: Provide detailed diagnostic criteria of that particular rhythm/arrhythmia.\n5. Recognition Summary: A featured statement to summarise, how that particular rhythm/arrhythmia can be recognised or distinguished from others.\n6. Visual Suggestion: Describe any additional diagram or image needed to illustrate the point. **CRITICAL: All suggested diagrams must be described with anatomical, physiological, and physical accuracy.**\n`;
       } else {
-        prompt += `### SLIDE REQUIREMENTS\nFor each slide, provide:\n1. Slide Title\n2. Core Bullet Points (concise, high-yield)\n3. Visual Suggestion: Describe exactly what ECG strip, diagram, or image should be placed on the slide to illustrate the point.\n`;
+        prompt += `### SLIDE REQUIREMENTS\nFor each slide, provide:\n1. Slide Title\n2. Core Bullet Points (concise, high-yield)\n3. Visual Suggestion: Describe exactly what ECG strip, diagram, or image should be placed on the slide to illustrate the point. **CRITICAL: All suggested diagrams must be described with anatomical, physiological, and physical accuracy.**\n`;
       }
     } else {
       prompt += `### TASK: EXERCISE GENERATION\nGenerate 10 high-quality clinical exercise questions based on the following topics:\n${selectedTopics.map(t => `- ${t}`).join('\n')}\n\n`;
