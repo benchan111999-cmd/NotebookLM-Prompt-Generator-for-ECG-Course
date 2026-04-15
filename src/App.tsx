@@ -4,10 +4,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 
 const getAI = () => {
-  const key = process.env.GEMINI_API_KEY;
+  const key = import.meta.env.VITE_GEMINI_API_KEY ?? import.meta.env.GEMINI_API_KEY ?? process.env.GEMINI_API_KEY;
+
   if (!key || key === 'MY_GEMINI_API_KEY') {
-    throw new Error('Gemini API Key is not configured. Please set GEMINI_API_KEY in your environment.');
+    throw new Error('Gemini API Key is not configured. Please set VITE_GEMINI_API_KEY (or GEMINI_API_KEY) in your environment.');
   }
+
   return new GoogleGenAI({ apiKey: key });
 };
 
