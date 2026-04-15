@@ -13,9 +13,78 @@ const getAI = () => {
   return new GoogleGenAI({ apiKey: key });
 };
 
-const courseData: Record<string, { strategy: string; topics: string[] }> = {
+type RequirementProfile = {
+  title: string;
+  items: string[];
+  notes?: string[];
+};
+
+type ModuleConfig = {
+  strategy: string;
+  topics: string[];
+  lectureProfile: 'foundation' | 'rhythm' | 'cad' | 'advanced';
+  exerciseCount?: number;
+};
+
+const lectureRequirementProfiles: Record<ModuleConfig['lectureProfile'], RequirementProfile> = {
+  foundation: {
+    title: 'Foundational Knowledge Slides',
+    items: [
+      'Slide Title',
+      'Core Bullet Points (concise, high-yield)',
+      'Mechanism Focus: Explain physiological or conceptual flow in plain teaching language',
+      'Visual Suggestion: Describe exactly what ECG strip, diagram, or image should be placed on the slide. **CRITICAL: Keep all anatomical, physiological, and physical details accurate.**',
+    ],
+    notes: [
+      'Prefer concept-building progression (basic → applied).',
+    ],
+  },
+  rhythm: {
+    title: 'Rhythm/Arrhythmia Diagnostic Slides',
+    items: [
+      'Slide Title',
+      'Core Bullet Points (concise, high-yield)',
+      'ECG Strip Requirement: Include an accurate ECG strip showing the exact rhythm or arrhythmia',
+      'Diagnostic Criteria: Provide detailed criteria for that rhythm/arrhythmia',
+      'Recognition Summary: A featured statement showing how this rhythm is recognised and differentiated',
+      'Visual Suggestion: Describe any additional diagram/image needed. **CRITICAL: Keep all anatomical, physiological, and physical details accurate.**',
+    ],
+    notes: [
+      'Prioritize side-by-side differentiation for look-alike rhythms.',
+    ],
+  },
+  cad: {
+    title: 'Coronary / Ischemia Pattern Slides',
+    items: [
+      'Slide Title',
+      'Core Bullet Points (concise, high-yield)',
+      'Lead Correlation: State lead group and likely anatomical territory',
+      'Temporal Evolution: Note stage progression where relevant (hyperacute → ST elevation → Q-wave/T-wave changes)',
+      'Visual Suggestion: Describe ECG or anatomy visuals with precise lead labeling and localization',
+    ],
+    notes: [
+      'Emphasize localization and timeline interpretation.',
+    ],
+  },
+  advanced: {
+    title: 'High-Risk & Integrative Clinical Slides',
+    items: [
+      'Slide Title',
+      'Core Bullet Points (concise, high-yield)',
+      'Red Flags: List immediate danger signs or escalation triggers',
+      'Correlation Layer: Link ECG findings with electrolytes/genetics/hemodynamics where relevant',
+      'Visual Suggestion: Describe ECG or supportive visuals with clinically accurate detail',
+    ],
+    notes: [
+      'Highlight emergency recognition and practical decision support.',
+    ],
+  },
+};
+
+const courseData: Record<string, ModuleConfig> = {
   "Module 1: Foundations of Cardiac Electrophysiology & Public Health": {
     strategy: "The Explainer: Focus on physiological mechanisms, ion flux, and conceptual flow. Request descriptions for diagrams.",
+    lectureProfile: 'foundation',
     topics: [
       "Heart Disease Burden: Overview and impact of Coronary Heart Disease",
       "Anatomy and Physiology of the Heart: Chambers, valves, and circulation mechanics",
@@ -25,6 +94,7 @@ const courseData: Record<string, { strategy: string; topics: string[] }> = {
   },
   "Module 2: Technical Fundamentals and the 8-Step Framework": {
     strategy: "The Manual: Focus on systematic algorithms, checklists, and mathematical formulas (e.g., the 300 rule).",
+    lectureProfile: 'rhythm',
     topics: [
       "Principles of ECG Recording: Cardiac Vectors and rules of summation",
       "The 12-Lead Configuration: Limb, augmented, and precordial leads",
@@ -43,6 +113,7 @@ const courseData: Record<string, { strategy: string; topics: string[] }> = {
   },
   "Module 3: Conduction Defects and Brady-arrhythmias": {
     strategy: "The Comparator: Focus on distinguishing between similar patterns. Request 'Key Diagnostic Features' tables.",
+    lectureProfile: 'rhythm',
     topics: [
       "The Escape Mechanism: Concept, Hierarchy of Automaticity, and Escape vs. Ectopy",
       "Junctional and Idioventricular Escape Rhythms: Identification criteria",
@@ -57,6 +128,7 @@ const courseData: Record<string, { strategy: string; topics: string[] }> = {
   },
   "Module 4: Ectopic Beats and Tachy-arrhythmias": {
     strategy: "The Decision Tree: Focus on rapid triage and diagnostic algorithms. Request 'If This → Then That' slide structures.",
+    lectureProfile: 'rhythm',
     topics: [
       "Premature Complexes: Recognition of PACs, PJCs, and PVCs",
       "Narrow Complex Tachycardia: SVT (Atrial Tachy, AVNRT, Flutter, Fibrillation)",
@@ -67,6 +139,7 @@ const courseData: Record<string, { strategy: string; topics: string[] }> = {
   },
   "Module 5: Coronary Artery Disease and ACS Management": {
     strategy: "The Mapper: Focus on temporal evolution (Hyperacute → Q-wave) and lead-to-anatomy localization.",
+    lectureProfile: 'cad',
     topics: [
       "Pathogenesis and Evolution: Atherosclerosis and STEMI evolution",
       "Localization of MI: Contiguous leads, RV leads (V4-6R), and Posterior leads (V7-9)",
@@ -77,6 +150,7 @@ const courseData: Record<string, { strategy: string; topics: string[] }> = {
   },
   "Module 6: Advanced and Post-Acute Care": {
     strategy: "The Specialist: Focus on 'Red Flag' patterns and correlation between electrolytes and waveforms.",
+    lectureProfile: 'advanced',
     topics: [
       "High-Risk MI Variants: Wellens Syndrome, De Winter sign, and Shark Fin pattern",
       "Pulmonary Embolism (PE): S1Q3T3, RV strain, and T-wave inversions",
@@ -86,7 +160,7 @@ const courseData: Record<string, { strategy: string; topics: string[] }> = {
       "Miscellaneous: Low Voltage and Electrical Alternans",
       "Post-Acute Care: Cardiac Rehab, Digital Health, and Secondary Prevention targets"
     ]
-  }
+  },
 };
 
 export default function App() {
@@ -141,17 +215,22 @@ export default function App() {
     if (mode === 'lecture') {
       prompt += `### TASK: LECTURE SLIDES\nCreate a detailed slide deck for the following topics within ${selectedModule}:\n${selectedTopics.map(t => `- ${t}`).join('\n')}\n\n`;
       prompt += `### PEDAGOGICAL STRATEGY\n${modInfo.strategy}\n\n`;
-      
-      const isRhythmModule = !selectedModule.startsWith("Module 1");
-      
-      if (isRhythmModule) {
-        prompt += `### SLIDE REQUIREMENTS\nFor each slide, provide:\n1. Slide Title\n2. Core Bullet Points (concise, high-yield)\n3. ECG Strip Requirement: Include an accurate ECG strip showing the exact ECG rhythm or arrhythmia, corresponding to the diagnosis referring to.\n4. Diagnostic Criteria: Provide detailed diagnostic criteria of that particular rhythm/arrhythmia.\n5. Recognition Summary: A featured statement to summarise, how that particular rhythm/arrhythmia can be recognised or distinguished from others.\n6. Visual Suggestion: Describe any additional diagram or image needed to illustrate the point. **CRITICAL: All suggested diagrams must be described with anatomical, physiological, and physical accuracy.**\n`;
-      } else {
-        prompt += `### SLIDE REQUIREMENTS\nFor each slide, provide:\n1. Slide Title\n2. Core Bullet Points (concise, high-yield)\n3. Visual Suggestion: Describe exactly what ECG strip, diagram, or image should be placed on the slide to illustrate the point. **CRITICAL: All suggested diagrams must be described with anatomical, physiological, and physical accuracy.**\n`;
+
+      const profile = lectureRequirementProfiles[modInfo.lectureProfile];
+      prompt += `### ADAPTIVE SLIDE REQUIREMENTS (${profile.title})\nFor each slide, provide:\n${profile.items.map((item, index) => `${index + 1}. ${item}`).join('\n')}\n`;
+      if (profile.notes && profile.notes.length > 0) {
+        prompt += `\nAdditional emphasis:\n${profile.notes.map(note => `- ${note}`).join('\n')}\n`;
+      }
+
+      if (selectedTopics.length <= 2) {
+        prompt += `\n### ADAPTIVE DEPTH CONTROL\nBecause only ${selectedTopics.length} topic(s) were selected, increase conceptual depth and include more nuanced explanations/examples per topic.\n`;
+      } else if (selectedTopics.length >= 4) {
+        prompt += `\n### ADAPTIVE DEPTH CONTROL\nBecause ${selectedTopics.length} topics were selected, prioritize must-know diagnostic and management points first, then add detail only if space allows.\n`;
       }
     } else {
-      prompt += `### TASK: EXERCISE GENERATION\nGenerate 10 high-quality clinical exercise questions based on the following topics:\n${selectedTopics.map(t => `- ${t}`).join('\n')}\n\n`;
-      prompt += `### EXERCISE FORMAT\nFor each of the 10 questions, use this exact structure:\n1. Case Presentation: (Patient age, gender, chief complaint, vital signs)\n2. ECG Finding: (Describe the specific ECG abnormalities found)\n3. Multiple Choice Question: (A high-yield clinical question with 4 options)\n4. Correct Answer & Rationale: (Explain why the answer is correct and why others are wrong, referencing the source documents)\n`;
+      const questionCount = selectedTopics.length <= 2 ? 8 : 10;
+      prompt += `### TASK: EXERCISE GENERATION\nGenerate ${questionCount} high-quality clinical exercise questions based on the following topics:\n${selectedTopics.map(t => `- ${t}`).join('\n')}\n\n`;
+      prompt += `### EXERCISE FORMAT\nFor each of the ${questionCount} questions, use this exact structure:\n1. Case Presentation: (Patient age, gender, chief complaint, vital signs)\n2. ECG Finding: (Describe the specific ECG abnormalities found)\n3. Multiple Choice Question: (A high-yield clinical question with 4 options)\n4. Correct Answer & Rationale: (Explain why the answer is correct and why others are wrong, referencing the source documents)\n`;
     }
 
     if (customFocus) {
