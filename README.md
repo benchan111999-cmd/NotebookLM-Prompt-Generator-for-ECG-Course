@@ -10,11 +10,19 @@ View your app in AI Studio: https://ai.studio/apps/72d140aa-5c07-4dd4-8313-7ae94
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
+**Prerequisites:** Node.js **18 or later** (Node 20 LTS recommended)
 
 
 1. Install dependencies:
    `npm install`
-2. Set `VITE_GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key (the app also accepts `GEMINI_API_KEY` for compatibility)
-3. Run the app:
+2. Create `.env.local` from `.env.example` and set:
+   - `GEMINI_API_KEY` (server-side only)
+3. Run backend API (keeps Gemini key off the client bundle):
+   `npm run dev:server`
+4. Run frontend app:
    `npm run dev`
+
+### Security note
+
+- Never store Gemini keys in variables prefixed with `VITE_`. Vite exposes those values to browser JavaScript.
+- This project now calls Gemini from an Express backend endpoint (`/api/refine-focus`) so secrets remain server-side.

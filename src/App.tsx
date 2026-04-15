@@ -1,16 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { HeartPulse, Presentation, PenTool, Copy, Check, Info, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 
-const getAI = () => {
-  const key = import.meta.env.VITE_GEMINI_API_KEY ?? import.meta.env.GEMINI_API_KEY ?? process.env.GEMINI_API_KEY;
+const MAX_CUSTOM_FOCUS_LENGTH = 600;
 
-  if (!key || key === 'MY_GEMINI_API_KEY') {
-    throw new Error('Gemini API Key is not configured. Please set VITE_GEMINI_API_KEY (or GEMINI_API_KEY) in your environment.');
-  }
-
-  return new GoogleGenAI({ apiKey: key });
+const sanitizeCustomFocus = (value: string): string => {
+  return value
+    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_CUSTOM_FOCUS_LENGTH);
 };
 
 type RequirementProfile = {
@@ -234,7 +233,7 @@ export default function App() {
     }
 
     if (customFocus) {
-      prompt += `\n### ADDITIONAL FOCUS\n${customFocus}\n`;
+      prompt += `\n### ADDITIONAL FOCUS\n${sanitizeCustomFocus(customFocus)}\n`;
     }
 
     prompt += `\n\n### FINAL INSTRUCTION\nEnsure all information is extracted strictly from the uploaded sources. If information is missing, flag it as [Information not found in source].`;
@@ -253,35 +252,33 @@ export default function App() {
   };
 
   const refineWithAI = async () => {
-    if (!customFocus.trim()) return;
+    const cleanedFocus = sanitizeCustomFocus(customFocus);
+    if (!cleanedFocus) return;
     
     setIsRefining(true);
     setAiError(null);
     try {
-      const ai = getAI();
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Refine the following user request for an ECG slide deck into a highly effective, AI-readable prompt for NotebookLM. 
-        The goal is to make it clear, instructional, and structured so the AI knows exactly what to emphasize or simplify.
-        Keep it concise but powerful.
-        
-        User Request: "${customFocus}"
-        
-        Refined Prompt:`,
-        config: {
-          thinkingConfig: {
-            thinkingLevel: ThinkingLevel.LOW
-          }
-        }
+      const response = await fetch('/api/refine-focus', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ customFocus: cleanedFocus }),
       });
-      
-      const refinedText = response.text;
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error ?? 'Failed to refine prompt. Please check your server configuration.');
+      }
+
+      const data = (await response.json()) as { refinedText: string };
+      const refinedText = data.refinedText;
       if (refinedText) {
-        setCustomFocus(refinedText.trim());
+        setCustomFocus(sanitizeCustomFocus(refinedText));
       }
     } catch (err) {
-      console.error('Gemini refinement failed:', err);
-      setAiError(err instanceof Error ? err.message : 'Failed to refine prompt. Check your API key.');
+      console.error('AI refinement failed:', err);
+      setAiError(err instanceof Error ? err.message : 'Failed to refine prompt.');
       setTimeout(() => setAiError(null), 5000);
     } finally {
       setIsRefining(false);
@@ -491,10 +488,14 @@ export default function App() {
             </div>
             <textarea 
               value={customFocus}
-              onChange={(e) => setCustomFocus(e.target.value)}
+              onChange={(e) => setCustomFocus(sanitizeCustomFocus(e.target.value))}
               placeholder="Add specific focus (e.g., 'Emphasize the difference between Mobitz I and II' or 'Keep it simple for beginners')..." 
+              maxLength={MAX_CUSTOM_FOCUS_LENGTH}
               className="w-full p-4 text-sm rounded-2xl border border-slate-200 bg-slate-50 h-32 focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-slate-700 placeholder:text-slate-400"
             />
+            <p className="mt-2 text-[10px] text-slate-500 text-right">
+              {customFocus.length} / {MAX_CUSTOM_FOCUS_LENGTH} characters
+            </p>
           </section>
         </div>
 
