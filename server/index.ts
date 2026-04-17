@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import { sanitizeCustomFocus } from '../src/shared/sanitize.ts';
 
 dotenv.config({ path: '.env.local' });
 
@@ -9,16 +10,6 @@ type RefineBody = {
 };
 
 const PORT = Number(process.env.PORT ?? 8787);
-const MAX_CUSTOM_FOCUS_LENGTH = 600;
-
-const sanitizeCustomFocus = (value: string): string => {
-  return value
-    .replace(/[\u0000-\u001F\u007F]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, MAX_CUSTOM_FOCUS_LENGTH);
-};
-
 const app = express();
 app.use(express.json({ limit: '16kb' }));
 

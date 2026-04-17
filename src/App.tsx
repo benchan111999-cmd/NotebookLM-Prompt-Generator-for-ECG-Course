@@ -6,7 +6,8 @@ import { ModeSelector } from './components/ModeSelector';
 import { PromptOutput } from './components/PromptOutput';
 import { TopicSelector } from './components/TopicSelector';
 import { courseData, type GenerationMode } from './data/courseData';
-import { buildPrompt, MAX_CUSTOM_FOCUS_LENGTH, sanitizeCustomFocus } from './features/prompt/buildPrompt';
+import { buildPrompt } from './features/prompt/buildPrompt';
+import { MAX_CUSTOM_FOCUS_LENGTH, sanitizeCustomFocus } from '@/shared/sanitize';
 
 export default function App() {
   const [selectedModule, setSelectedModule] = useState(Object.keys(courseData)[0]);
