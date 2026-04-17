@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
-import express from 'express';
+import express, { type Request, type Response } from 'express';
+import { rateLimit } from 'express-rate-limit';
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { sanitizeCustomFocus } from '../src/shared/sanitize.ts';
 
@@ -13,7 +14,34 @@ const PORT = Number(process.env.PORT ?? 8787);
 const app = express();
 app.use(express.json({ limit: '16kb' }));
 
-app.post('/api/refine-focus', async (req, res) => {
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 20;
+const RATE_LIMIT_RESPONSE = {
+  error: 'Too many requests. Please retry in 1 minute.',
+};
+
+const refineFocusLimiter = rateLimit({
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  max: RATE_LIMIT_MAX_REQUESTS,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: RATE_LIMIT_RESPONSE,
+  statusCode: 429,
+  handler: (req: Request, res: Response) => {
+    console.warn('Rate limit exceeded', {
+      path: req.originalUrl,
+      method: req.method,
+      ip: req.ip,
+      userAgent: req.get('user-agent') ?? 'unknown',
+      windowMs: RATE_LIMIT_WINDOW_MS,
+      max: RATE_LIMIT_MAX_REQUESTS,
+    });
+    res.status(429).json(RATE_LIMIT_RESPONSE);
+  },
+});
+
+
+app.post('/api/refine-focus', refineFocusLimiter, async (req, res) => {
   const { customFocus } = req.body as RefineBody;
 
   if (typeof customFocus !== 'string') {

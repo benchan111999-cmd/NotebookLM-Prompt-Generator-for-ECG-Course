@@ -42,6 +42,9 @@ View your app in AI Studio: https://ai.studio/apps/72d140aa-5c07-4dd4-8313-7ae94
 - Never store Gemini keys in variables prefixed with `VITE_`.
 - Never expose `GEMINI_API_KEY` in frontend bundles.
 - Route Gemini calls through the backend API (`/api/refine-focus`).
+- `POST /api/refine-focus` is protected by rate limiting (1 minute window, max 20 requests per IP).
+- `GET /api/health` is intentionally excluded from rate limiting for uptime checks.
+- When throttled, the API returns HTTP `429` with a consistent error payload: `{ "error": "Too many requests. Please retry in 1 minute." }`.
 
 ## License recommendations
 
