@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildPrompt, MAX_CUSTOM_FOCUS_LENGTH, sanitizeCustomFocus } from './buildPrompt';
+import { buildPrompt } from './buildPrompt';
+import { MAX_CUSTOM_FOCUS_LENGTH, sanitizeCustomFocus } from '@/shared/sanitize';
 
 const moduleName = 'Module 1: Foundations of Cardiac Electrophysiology & Public Health';
 const firstTopic = 'Heart Disease Burden: Overview and impact of Coronary Heart Disease';
