@@ -1,8 +1,8 @@
 import dotenv from 'dotenv';
-import express, { type Request, type Response } from 'express';
-import { rateLimit } from 'express-rate-limit';
+import express from 'express';
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
-import { sanitizeCustomFocus } from '../src/shared/sanitize.ts';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
 
 dotenv.config({ path: '.env.local' });
 
@@ -11,37 +11,32 @@ type RefineBody = {
 };
 
 const PORT = Number(process.env.PORT ?? 8787);
-const app = express();
-app.use(express.json({ limit: '16kb' }));
+const MAX_CUSTOM_FOCUS_LENGTH = 600;
 
-const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const RATE_LIMIT_MAX_REQUESTS = 20;
-const RATE_LIMIT_RESPONSE = {
-  error: 'Too many requests. Please retry in 1 minute.',
+const sanitizeCustomFocus = (value: string): string => {
+  return value
+    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_CUSTOM_FOCUS_LENGTH);
 };
 
-const refineFocusLimiter = rateLimit({
-  windowMs: RATE_LIMIT_WINDOW_MS,
-  max: RATE_LIMIT_MAX_REQUESTS,
+const app = express();
+app.use(express.json({ limit: '16kb' }));
+app.use(helmet());
+
+// Rate limiting for API endpoints
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit each IP to 20 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  message: RATE_LIMIT_RESPONSE,
-  statusCode: 429,
-  handler: (req: Request, res: Response) => {
-    console.warn('Rate limit exceeded', {
-      path: req.originalUrl,
-      method: req.method,
-      ip: req.ip,
-      userAgent: req.get('user-agent') ?? 'unknown',
-      windowMs: RATE_LIMIT_WINDOW_MS,
-      max: RATE_LIMIT_MAX_REQUESTS,
-    });
-    res.status(429).json(RATE_LIMIT_RESPONSE);
-  },
 });
 
+app.use('/api/refine-focus', limiter);
 
-app.post('/api/refine-focus', refineFocusLimiter, async (req, res) => {
+app.post('/api/refine-focus', async (req, res) => {
   const { customFocus } = req.body as RefineBody;
 
   if (typeof customFocus !== 'string') {
@@ -53,15 +48,15 @@ app.post('/api/refine-focus', refineFocusLimiter, async (req, res) => {
     return res.status(400).json({ error: 'Please provide a non-empty focus request.' });
   }
 
-  const key = process.env.GEMINI_API_KEY;
-  if (!key || key === 'MY_GEMINI_API_KEY') {
-    return res.status(500).json({ error: 'Server Gemini API key is missing. Set GEMINI_API_KEY in .env.local.' });
-  }
+const key = process.env.GEMINI_API_KEY;
+   if (!key || key.trim() === '') {
+     return res.status(500).json({ error: 'Server Gemini API key is missing or empty.' });
+   }
 
   try {
     const ai = new GoogleGenAI({ apiKey: key });
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.5-flash',
       contents: `You are refining a user hint for an ECG education prompt generator.
 
 Rules:
