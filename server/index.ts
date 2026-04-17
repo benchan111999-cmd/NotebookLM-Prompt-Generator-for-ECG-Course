@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
 
 dotenv.config({ path: '.env.local' });
 
@@ -21,6 +23,18 @@ const sanitizeCustomFocus = (value: string): string => {
 
 const app = express();
 app.use(express.json({ limit: '16kb' }));
+app.use(helmet());
+
+// Rate limiting for API endpoints
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit each IP to 20 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use('/api/refine-focus', limiter);
 
 app.post('/api/refine-focus', async (req, res) => {
   const { customFocus } = req.body as RefineBody;
@@ -34,15 +48,15 @@ app.post('/api/refine-focus', async (req, res) => {
     return res.status(400).json({ error: 'Please provide a non-empty focus request.' });
   }
 
-  const key = process.env.GEMINI_API_KEY;
-  if (!key || key === 'MY_GEMINI_API_KEY') {
-    return res.status(500).json({ error: 'Server Gemini API key is missing. Set GEMINI_API_KEY in .env.local.' });
-  }
+const key = process.env.GEMINI_API_KEY;
+   if (!key || key.trim() === '') {
+     return res.status(500).json({ error: 'Server Gemini API key is missing or empty.' });
+   }
 
   try {
     const ai = new GoogleGenAI({ apiKey: key });
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.5-flash',
       contents: `You are refining a user hint for an ECG education prompt generator.
 
 Rules:
