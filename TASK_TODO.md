@@ -17,12 +17,13 @@
 | 組件重構 | ✅ 完成 | App.tsx 從 566 行拆分為 194 行，使用 4 個獨立組件 |
 | 提取 courseData | ✅ 完成 | 課程數據已提取至 `src/data/courseData.ts` |
 | 共用 sanitize 函數 | ✅ 完成 | 建立 `src/shared/sanitize.ts`，前後端共用 |
+| Error Boundary | ✅ 完成 | 新增錯誤邊界組件，監聽全域錯誤事件 |
 
 ### ⏳ 待完成 (To-Do)
 
 | 任務 | 優先順序 | 說明 |
 |------|----------|------|
-| Error Boundary | 低 | 新增 React Error Boundary 處理渲染錯誤 |
+| (無) | - | 所有 Short-Term 任務已完成 |
 
 ---
 
@@ -38,8 +39,8 @@
 
 ## 📊 總結
 
-- **Short-Term 完成進度**: 11/11 (100%)
-- **待辦 (Short-Term)**: 0 項 ✅
+- **Short-Term 完成進度**: 12/12 (100%) ✅
+- **待辦 (Short-Term)**: 0 項
 - **待辦 (Mid-Long Term)**: 3 項
 
 ---
@@ -50,19 +51,20 @@
 ```
 src/
 ├── components/
-│   ├── FocusEditor.tsx      # 自定義焦點輸入 + AI 精煉按鈕
-│   ├── ModeSelector.tsx      # 授課/練習模式切換
-│   ├── PromptOutput.tsx     # 生成的提示輸出 + 複製功能
-│   └── TopicSelector.tsx    # 主題選擇 + 複雜度指示器
+│   ├── ErrorBoundary.tsx      # 錯誤邊界 (新增)
+│   ├── FocusEditor.tsx        # 自定義焦點輸入 + AI 精煉按鈕
+│   ├── ModeSelector.tsx       # 授課/練習模式切換
+│   ├── PromptOutput.tsx      # 生成的提示輸出 + 複製功能
+│   └── TopicSelector.tsx     # 主題選擇 + 複雜度指示器
 ├── data/
-│   └── courseData.ts        # 課程模組數據 (已外部化)
+│   └── courseData.ts         # 課程模組數據 (已外部化)
 ├── features/
 │   └── prompt/
-│       └── buildPrompt.ts   # Prompt 生成邏輯
+│       └── buildPrompt.ts    # Prompt 生成邏輯
 ├── shared/
-│   ├── sanitize.ts          # 共用輸入清理函數
-│   └── sanitize.test.ts     # 單元測試
-└── App.tsx                  # 主應用 (從 566 行減少至 194 行)
+│   ├── sanitize.ts           # 共用輸入清理函數
+│   └── sanitize.test.ts      # 單元測試
+└── App.tsx                   # 主應用 (從 566 行減少至 194 行)
 ```
 
 ### 重構成效
@@ -76,8 +78,8 @@ src/
 ## 下一步建議
 
 所有 Short-Term 任務已完成！如需繼續開發，可以考慮：
-1. **Error Boundary** - 新增錯誤邊界提升穩定性
-2. **多語言支持** - 實現中英文切換
-3. **本地歷史紀錄** - 儲存提示歷史
+1. **多語言支持** - 實現中英文切換
+2. **本地歷史紀錄** - 儲存提示歷史
+3. **智慧解析** - PDF 課程大綱自動解析
 
 請告訴我您的下一步指示！
