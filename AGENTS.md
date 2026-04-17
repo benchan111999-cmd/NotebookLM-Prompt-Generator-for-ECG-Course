@@ -58,3 +58,54 @@
 - 使用 Tailwind CSS 進行样式設計
 - 遵循現代化的 React 18 組件化架構
 - 使用 Vite 作為建置工具
+
+## Git 工作流程 (Git Workflow)
+
+### 拉取請求工作流程 (Pull Request Workflow)
+
+**重要**: 所有功能開發必須遵循此工作流程，禁止直接推送到 main 分支。
+
+1. **拉取最新變更**
+   ```bash
+   git pull origin main
+   ```
+
+2. **建立功能分支**
+   ```bash
+   git checkout -b feature/功能名稱
+   ```
+
+3. **開發與提交**
+   - 進行程式碼開發
+   - 提交變更到功能分支
+
+4. **推送分支**
+   ```bash
+   git push origin feature/功能名稱
+   ```
+
+5. **建立拉取請求**
+   - 前往 GitHub 建立 PR
+   - 等待審核後合併
+
+### 提交前檢查清單 (Pre-Commit Checklist)
+
+在執行 `git commit` 之前，必須完成以下檢查：
+
+- [ ] 程式碼已通過型別檢查: `npm run lint`
+- [ ] 專案可以成功建置: `npm run build`
+- [ ] **TASK_TODO.md 已更新** - 標記完成的任務
+- [ ] 確認所有變更已暫存 (staged)
+
+### 更新待辦清單 (Update Todo List)
+
+每次完成任務後，必須更新 `TASK_TODO.md`：
+
+1. 將完成的任務從「待完成」移至「已完成」
+2. 更新進度百分比
+3. 在提交訊息中註明已更新 todo list
+
+### 禁止事項
+
+- **嚴禁**直接推送到 main 分支
+- **嚴禁**在未更新 TASK_TODO.md 的情況下提交
