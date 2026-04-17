@@ -20,4 +20,5 @@ We will acknowledge reports as quickly as possible and prioritize severe issues 
 
 - Never expose `GEMINI_API_KEY` in frontend bundles.
 - Never place secrets in variables prefixed with `VITE_`.
+- Store secrets only in local/server environment files (for example, `.env.local`) and keep them out of source control.
 - Route Gemini calls through the backend API (`/api/refine-focus`).
