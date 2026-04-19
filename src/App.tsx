@@ -5,12 +5,18 @@ import { FocusEditor } from './components/FocusEditor';
 import { ModeSelector } from './components/ModeSelector';
 import { PromptOutput } from './components/PromptOutput';
 import { TopicSelector } from './components/TopicSelector';
+import { FileUploader } from './components/FileUploader';
+import { ParsedOutline } from './shared/courseOutlineParser';
+import { CourseProvider, useCourse } from './context/CourseContext';
 import { courseData, type GenerationMode } from './data/courseData';
 import { buildPrompt } from './features/prompt/buildPrompt';
 import { MAX_CUSTOM_FOCUS_LENGTH, sanitizeCustomFocus } from '@/shared/sanitize';
+import { parseCourseOutline } from './shared/courseOutlineParser';
+import { ParsedDataReviewer } from './components/ParsedDataReviewer';
 
 export default function App() {
-  const [selectedModule, setSelectedModule] = useState(Object.keys(courseData)[0]);
+  const { courseData: currentCourseData, isUsingParsedData, setParsedData, resetToDefault } = useCourse();
+  const [selectedModule, setSelectedModule] = useState(Object.keys(currentCourseData)[0]);
   const [selectedTopics, setSelectedTopics] = useState([] as string[]);
   const [mode, setMode] = useState('lecture' as GenerationMode);
   const [useStyle, setUseStyle] = useState(true);
@@ -18,6 +24,11 @@ export default function App() {
   const [copied, setCopied] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
   const [aiError, setAiError] = useState(null as string | null);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [parsingError, setParsingError] = useState<string | null>(null);
+  const [isReviewingParsedData, setIsReviewingParsedData] = useState(false);
+  const [parsedOutlineForReview, setParsedOutlineForReview] = useState<ParsedOutline | null>(null);
 
   useEffect(() => {
     setSelectedTopics([]);
@@ -30,7 +41,47 @@ export default function App() {
   };
 
   const selectAllTopics = () => {
-    setSelectedTopics(courseData[selectedModule].topics);
+    setSelectedTopics(currentCourseData[selectedModule].topics);
+  };
+
+  const handleFileProcessed = (extractedText: string, fileType: 'pdf' | 'md') => {
+    setIsProcessingFile(false);
+    setFileError(null);
+    setParsingError(null);
+    
+    try {
+      // Parse the extracted text using our course outline parser
+      const parsedOutline: ParsedOutline = parseCourseOutline(extractedText);
+      
+      // Validate that we got some meaningful data
+      if (parsedOutline.modules.length === 0) {
+        throw new Error('無法從檔案中偵測到任何課程模組，請檢查檔案內容是否包含明確的模組標題');
+      }
+      
+      // Set the parsed outline for review
+      setParsedOutlineForReview(parsedOutline);
+      setIsReviewingParsedData(true);
+    } catch (err) {
+      setParsingError(err instanceof Error ? err.message : '解析過程中發生錯誤，請重試');
+      console.error('Parsing failed:', err);
+    }
+  };
+
+  const handleFileError = (message: string) => {
+    setIsProcessingFile(false);
+    setFileError(message);
+    setParsingError(null);
+  };
+
+  const handleReviewConfirm = (outline: ParsedOutline) => {
+    setParsedData(outline);
+    setIsReviewingParsedData(false);
+    setParsedOutlineForReview(null);
+  };
+
+  const handleReviewCancel = () => {
+    setIsReviewingParsedData(false);
+    setParsedOutlineForReview(null);
   };
 
   const complexityLevel = useMemo(() => {
@@ -115,13 +166,15 @@ export default function App() {
       <main className="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-5 space-y-6">
           <section className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-            <label className="block text-xs font-bold text-slate-500 mb-4 uppercase tracking-widest">Step 1: Select Module</label>
+            <label className="block text-xs font-bold text-slate-500 mb-4 uppercase tracking-widest">
+              Step 1: Select Module
+            </label>
             <select
               value={selectedModule}
               onChange={(e: { target: { value: string } }) => setSelectedModule(e.target.value)}
               className="w-full p-4 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-slate-700 font-medium cursor-pointer"
             >
-              {Object.keys(courseData).map((mod) => (
+              {Object.keys(currentCourseData).map((mod) => (
                 <option key={mod} value={mod}>
                   {mod}
                 </option>
@@ -129,8 +182,58 @@ export default function App() {
             </select>
           </section>
 
+          {/* File Upload Section */}
+          <section className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+            <label className="block text-xs font-bold text-slate-500 mb-4 uppercase tracking-widest">
+              Or Upload Course Outline
+            </label>
+            <FileUploader
+              onFileProcessed={handleFileProcessed}
+              onError={handleFileError}
+            />
+            {isProcessingFile && (
+              <div className="mt-3 flex items-center gap-2 text-sm text-blue-600">
+                <div className="h-3 w-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                <span>Processing file...</span>
+              </div>
+            )}
+            {fileError && (
+              <div className="mt-3 flex items-center gap-2 text-sm text-red-600">
+                <AlertTriangle className="h-3 w-3" />
+                <span>{fileError}</span>
+              </div>
+            )}
+            {parsingError && (
+              <div className="mt-3 flex items-center gap-2 text-sm text-red-600">
+                <AlertTriangle className="h-3 w-3" />
+                <span>{parsingError}</span>
+              </div>
+            )}
+            {isReviewingParsedData && (
+              <ParsedDataReviewer
+                outline={parsedOutlineForReview!}
+                onConfirm={handleReviewConfirm}
+                onCancel={handleReviewCancel}
+              />
+            )}
+            {isUsingParsedData && !isReviewingParsedData && (
+              <div className="mt-4 flex items-center gap-2 text-sm text-green-600">
+                <Check className="h-3 w-3" />
+                <span>
+                  Using parsed course data from uploaded file.{' '}
+                  <button
+                    onClick={resetToDefault}
+                    className="ml-2 text-xs font-semibold text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Reset to Default
+                  </button>
+                </span>
+              </div>
+            )}
+          </section>
+
           <TopicSelector
-            topics={courseData[selectedModule].topics}
+            topics={currentCourseData[selectedModule].topics}
             selectedTopics={selectedTopics}
             onToggleTopic={toggleTopic}
             onSelectAll={selectAllTopics}
