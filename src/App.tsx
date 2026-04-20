@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, Check, HeartPulse, Info } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Check, HeartPulse, Info } from 'lucide-react';
 import { motion } from 'motion/react';
 import { FocusEditor } from './components/FocusEditor';
 import { ModeSelector } from './components/ModeSelector';

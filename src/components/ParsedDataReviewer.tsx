@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { Check, AlertTriangle, Edit, Trash2, Upload, Plus, X } from 'lucide-react';
 import { ParsedOutline, ParsedModule } from '../shared/courseOutlineParser';
 
@@ -8,11 +8,7 @@ interface ParsedDataReviewerProps {
   onCancel: () => void;
 }
 
-export const ParsedDataReviewer: React.FC<ParsedDataReviewerProps> = ({
-  outline,
-  onConfirm,
-  onCancel,
-}) => {
+export function ParsedDataReviewer({ outline, onConfirm, onCancel }: ParsedDataReviewerProps) {
   const [editedOutline, setEditedOutline] = useState<ParsedOutline>(outline);
   const [isEditingModule, setIsEditingModule] = useState<{
     moduleIndex: number;
@@ -38,7 +34,6 @@ export const ParsedDataReviewer: React.FC<ParsedDataReviewerProps> = ({
       setEditedOutline({
         ...editedOutline,
         modules: updatedModules,
-        // Recalculate overall confidence
         overallConfidence:
           updatedModules.length > 0
             ? updatedModules.reduce((sum, m) => sum + m.confidence, 0) /
@@ -58,25 +53,21 @@ export const ParsedDataReviewer: React.FC<ParsedDataReviewerProps> = ({
       const updatedTopics = [...updatedModules[moduleIndex].topics];
       updatedTopics.splice(topicIndex, 1);
       updatedModules[moduleIndex].topics = updatedTopics;
-      
-      // Recalculate module confidence based on remaining topics
+
       if (updatedTopics.length > 0) {
         const topicConfidence =
           updatedTopics.reduce((sum, t) => sum + t.confidence, 0) /
           updatedTopics.length;
-        // Keep original module header confidence, adjust based on topic success
         updatedModules[moduleIndex].confidence =
           (updatedModules[moduleIndex].confidence + topicConfidence) / 2;
       } else {
-        // If no topics left, significantly reduce confidence
         updatedModules[moduleIndex].confidence =
           updatedModules[moduleIndex].confidence * 0.5;
       }
-      
+
       setEditedOutline({
         ...editedOutline,
         modules: updatedModules,
-        // Recalculate overall confidence
         overallConfidence:
           updatedModules.length > 0
             ? updatedModules.reduce((sum, m) => sum + m.confidence, 0) /
@@ -112,13 +103,13 @@ export const ParsedDataReviewer: React.FC<ParsedDataReviewerProps> = ({
       alert('模組標題不能為空');
       return;
     }
-    
+
     const updatedModules = [...editedOutline.modules];
     updatedModules[moduleIndex] = {
       ...updatedModules[moduleIndex],
       title: newModuleTitle.trim(),
     };
-    
+
     setEditedOutline({
       ...editedOutline,
       modules: updatedModules,
@@ -132,16 +123,16 @@ export const ParsedDataReviewer: React.FC<ParsedDataReviewerProps> = ({
       alert('主題標題不能為空');
       return;
     }
-    
+
     const updatedModules = [...editedOutline.modules];
     const updatedTopics = [...updatedModules[moduleIndex].topics];
     updatedTopics[topicIndex] = {
       ...updatedTopics[topicIndex],
       title: newTopicTitle.trim(),
     };
-    
+
     updatedModules[moduleIndex].topics = updatedTopics;
-    
+
     setEditedOutline({
       ...editedOutline,
       modules: updatedModules,
@@ -155,17 +146,16 @@ export const ParsedDataReviewer: React.FC<ParsedDataReviewerProps> = ({
       alert('請輸入新模組標題');
       return;
     }
-    
+
     const newModule: ParsedModule = {
       title: newModuleTitle.trim(),
-      confidence: 0.8, // Default confidence for manually added modules
+      confidence: 0.8,
       topics: [],
     };
-    
+
     setEditedOutline({
       ...editedOutline,
       modules: [...editedOutline.modules, newModule],
-      // Recalculate overall confidence
       overallConfidence:
         editedOutline.modules.length > 0
           ? (editedOutline.overallConfidence * editedOutline.modules.length +
@@ -173,7 +163,7 @@ export const ParsedDataReviewer: React.FC<ParsedDataReviewerProps> = ({
             (editedOutline.modules.length + 1)
           : newModule.confidence,
     });
-    
+
     setNewModuleTitle('');
   };
 
@@ -182,32 +172,30 @@ export const ParsedDataReviewer: React.FC<ParsedDataReviewerProps> = ({
       alert('請輸入新主題標題');
       return;
     }
-    
+
     const newTopic: { title: string; confidence: number } = {
       title: newTopicTitle.trim(),
-      confidence: 0.7, // Default confidence for manually added topics
+      confidence: 0.7,
     };
-    
+
     const updatedModules = [...editedOutline.modules];
     const updatedTopics = [...updatedModules[moduleIndex].topics, newTopic];
     updatedModules[moduleIndex].topics = updatedTopics;
-    
-    // Recalculate module confidence based on updated topics
+
     const topicConfidence =
       updatedTopics.reduce((sum, t) => sum + t.confidence, 0) /
       updatedTopics.length;
     updatedModules[moduleIndex].confidence =
       (updatedModules[moduleIndex].confidence + topicConfidence) / 2;
-    
+
     setEditedOutline({
       ...editedOutline,
       modules: updatedModules,
     });
-    
+
     setNewTopicTitle('');
   };
 
-  // Calculate overall confidence for display
   const overallConfidencePercent = Math.round(
     editedOutline.overallConfidence * 100
   );
@@ -235,7 +223,6 @@ export const ParsedDataReviewer: React.FC<ParsedDataReviewerProps> = ({
         </div>
       </div>
 
-      {/* Display parsed modules and topics */}
       <div className="space-y-4">
         {editedOutline.modules.map((module, moduleIndex) => (
           <div
@@ -303,7 +290,6 @@ export const ParsedDataReviewer: React.FC<ParsedDataReviewerProps> = ({
               </button>
             </div>
 
-            {/* Topics list */}
             {module.topics.length > 0 ? (
               <div className="space-y-2">
                 <p className="text-xs font-bold text-slate-600 mb-1">
@@ -357,9 +343,7 @@ export const ParsedDataReviewer: React.FC<ParsedDataReviewerProps> = ({
                       ) : (
                         <>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm">
-                              {topic.title}
-                            </span>
+                            <span className="text-sm">{topic.title}</span>
                             <span className="ml-2 px-1 py-0 text-xs rounded-full">
                               {Math.round(topic.confidence * 100)}%
                             </span>
@@ -394,7 +378,6 @@ export const ParsedDataReviewer: React.FC<ParsedDataReviewerProps> = ({
               </p>
             )}
 
-            {/* Add new topic section */}
             <div className="mt-3 pt-3 border-t border-slate-200">
               <div className="flex items-center gap-2">
                 <input
@@ -421,38 +404,34 @@ export const ParsedDataReviewer: React.FC<ParsedDataReviewerProps> = ({
             </div>
           </div>
         ))}
+      </div>
 
-        {/* Add new module section */}
-        <div className="mt-6 pt-5 border-t border-slate-200">
-          <h4 className="font-semibold text-slate-700 mb-3">
+      <div className="mt-6 pt-5 border-t border-slate-200">
+        <h4 className="font-semibold text-slate-700 mb-3">新增模組</h4>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={newModuleTitle}
+            onChange={(e) => setNewModuleTitle(e.target.value)}
+            placeholder="輸入新模組標題..."
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                addNewModule();
+              } else if (e.key === 'Escape') {
+                setNewModuleTitle('');
+              }
+            }}
+            className="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white w-64"
+          />
+          <button
+            onClick={addNewModule}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
             新增模組
-          </h4>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={newModuleTitle}
-              onChange={(e) => setNewModuleTitle(e.target.value)}
-              placeholder="輸入新模組標題..."
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  addNewModule();
-                } else if (e.key === 'Escape') {
-                  setNewModuleTitle('');
-                }
-              }}
-              className="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white w-64"
-            />
-            <button
-              onClick={addNewModule}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              新增模組
-            </button>
-          </div>
+          </button>
         </div>
       </div>
 
-      {/* Action buttons */}
       <div className="mt-6 pt-4 border-t border-slate-200 flex justify-end gap-3">
         <button
           onClick={handleCancel}
@@ -469,4 +448,4 @@ export const ParsedDataReviewer: React.FC<ParsedDataReviewerProps> = ({
       </div>
     </div>
   );
-};
+}

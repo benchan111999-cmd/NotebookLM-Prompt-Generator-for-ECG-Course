@@ -6,24 +6,19 @@ interface FileUploaderProps {
   onError: (message: string) => void;
 }
 
-export const FileUploader: React.FC<FileUploaderProps> = ({
-  onFileProcessed,
-  onError,
-}) => {
+export function FileUploader({ onFileProcessed, onError }: FileUploaderProps) {
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: any) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     const validTypes = ['application/pdf', 'text/markdown', 'text/plain'];
     if (!validTypes.includes(file.type)) {
       onError('請上傳 PDF 或 Markdown 檔案');
       return;
     }
 
-    // Validate file size (limit to 25MB)
     if (file.size > 25 * 1024 * 1024) {
       onError('檔案大小不能超過 25MB');
       return;
@@ -39,7 +34,6 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
       console.error(err);
     } finally {
       setIsProcessing(false);
-      // Reset input value to allow re-selecting same file
       e.target.value = '';
     }
   };
@@ -50,11 +44,8 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
     fileName: string
   ): Promise<string> => {
     if (mimeType === 'application/pdf') {
-      // For PDF, we'll use pdfjs-dist (to be implemented)
-      // For now, return placeholder
       return `PDF 檔案內容：${fileName}\n（此處將實作 PDF 文字擷取）`;
     } else {
-      // For Markdown/text files
       const decoder = new TextDecoder('utf-8');
       return decoder.decode(arrayBuffer);
     }
@@ -80,7 +71,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
                 點擊上傳或拖放檔案至此處
               </p>
               <p className="text-xs text-slate-400">
-                 支援 PDF 和 Markdown 格式，最大 25MB
+                支援 PDF 和 Markdown 格式，最大 25MB
               </p>
             </>
           ) : (
@@ -93,4 +84,4 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
       </div>
     </section>
   );
-};
+}

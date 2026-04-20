@@ -88,7 +88,7 @@ export const parseCourseOutline = (rawText: string): ParsedOutline => {
     if (moduleMatch) {
       // Save previous module if exists
       if (currentModule) {
-        const parsedModule = processModuleLines(currentModule.title, currentModuleLines);
+const parsedModule = processModuleLines(currentModule.title, currentModuleLines, currentModule.confidence);
         modules.push(parsedModule);
       }
 
@@ -128,7 +128,8 @@ export const parseCourseOutline = (rawText: string): ParsedOutline => {
  */
 const processModuleLines = (
   moduleTitle: string,
-  lines: string[]
+  lines: string[],
+  headerConfidence: number = 0.5
 ): ParsedModule => {
   const topics: Array<{ title: string; confidence: number }> = [];
   let currentTopic: { title: string; confidence: number } | null = null;
@@ -222,9 +223,8 @@ const processModuleLines = (
       ? topics.reduce((sum, t) => sum + t.confidence, 0) / topics.length
       : 0.1;
 
-  // Combine module header confidence with topic extraction confidence
-  const moduleConfidence =
-    currentModule?.confidence || 0.5; // This should be passed in, but we'll estimate
+// Combine module header confidence with topic extraction confidence
+const moduleConfidence = headerConfidence;
 
   return {
     title: moduleTitle,
